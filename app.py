@@ -5,22 +5,39 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)
 
-@app.route('/get_download_links', methods=['POST'])
-def get_download_links():
-    url = request.json.get('url')
-    if not url:
+@app.route('/get_streams_and_links', methods=['POST'])
+def get_streams_and_links():
+    data = request.get_json()
+    video_url = data.get('url')
+
+    if not video_url:
         return jsonify({'error': 'No URL provided'}), 400
 
     try:
-        yt = YouTube(url)
-        
-        video_streams = yt.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').desc()
-        audio_streams = yt.streams.filter(only_audio=True)
-        
-        video_links = [{'resolution': stream.resolution, 'url': stream.url} for stream in video_streams]
-        audio_links = [{'abr': stream.abr, 'url': stream.url} for stream in audio_streams]
+        # Create a YouTube object from the video URL
+        yt = YouTube(video_url)
 
-        return jsonify({'video_links': video_links, 'audio_links': audio_links})
+        # Get all available streams
+        streams = yt.streams.all()
+
+        # Create a dictionary to store stream information
+        stream_data = {
+            "title": yt.title,
+            "streams": []
+        }
+
+        # Extract information from each stream and add it to the dictionary
+        for stream in streams:
+            stream_data["streams"].append({
+                "resolution": stream.resolution,
+                "progressive": stream.is_progressive,
+                "itag": stream.itag,
+                "url": stream.url,  # Adding stream URL
+                "thumbnail_url": yt.thumbnail_url
+            })
+
+        return jsonify(stream_data)
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

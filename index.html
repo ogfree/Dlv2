@@ -3,109 +3,107 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YouTube Downloader</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <title>YouTube Video Stream Links</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-        .container {
-            background: white;
             padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-            width: 400px;
+        }
+        h1 {
             text-align: center;
         }
-        .container h1 {
-            margin-bottom: 20px;
-        }
-        .container input {
+        #videoUrlInput {
             width: 100%;
             padding: 10px;
-            margin: 10px 0;
-            border: 1px solid #ddd;
-            border-radius: 5px;
+            margin-bottom: 10px;
+            box-sizing: border-box;
         }
-        .container button {
-            background-color: #28a745;
-            color: white;
+        #streamList {
+            list-style-type: none;
+            padding: 0;
+        }
+        .stream-item {
+            margin-bottom: 10px;
             padding: 10px;
-            border: none;
+            border: 1px solid #ccc;
             border-radius: 5px;
-            cursor: pointer;
-            width: 100%;
+            background-color: #f9f9f9;
         }
-        .container button:hover {
-            background-color: #218838;
-        }
-        .links {
-            margin-top: 20px;
-        }
-        .links a {
-            display: block;
-            margin: 5px 0;
-            text-decoration: none;
-            color: #007bff;
-        }
-        .links a:hover {
-            text-decoration: underline;
+        .stream-item img {
+            max-width: 100%;
+            height: auto;
+            margin-bottom: 10px;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>YouTube Downloader</h1>
-        <input type="text" id="url" placeholder="Enter YouTube URL">
-        <button onclick="getDownloadLinks()">Get Download Links</button>
-        <div class="links" id="links"></div>
+    <h1>YouTube Video Stream Links</h1>
+    <div>
+        <input type="text" id="videoUrlInput" placeholder="Enter YouTube Video URL">
+        <button onclick="fetchStreams()">Get Streams</button>
     </div>
+    <ul id="streamList"></ul>
 
     <script>
-        async function getDownloadLinks() {
-            const url = document.getElementById('url').value;
-            if (!url) {
-                alert('Please enter a YouTube URL');
+        function fetchStreams() {
+            var videoUrl = document.getElementById('videoUrlInput').value.trim();
+            if (!videoUrl) {
+                alert('Please enter a YouTube video URL');
                 return;
             }
 
-            const response = await fetch('https://literate-adventure-pj6477r6gj7fr4qp-5000.app.github.dev/get_download_links', {
+            fetch('https://supreme-broccoli-6qj97j9rr472799-5000.app.github.dev/get_streams_and_links', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ url })
+                body: JSON.stringify({ url: videoUrl })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data);
+                displayStreams(data);
+            })
+            .catch(error => {
+                console.error('Error fetching streams:', error);
+                alert('Error fetching streams. Please try again.');
             });
+        }
 
-            const data = await response.json();
-            const linksDiv = document.getElementById('links');
-            linksDiv.innerHTML = '';
+        function displayStreams(data) {
+            var streamList = document.getElementById('streamList');
+            streamList.innerHTML = ''; // Clear previous list items
 
             if (data.error) {
-                linksDiv.innerHTML = `<p style="color: red;">${data.error}</p>`;
+                alert('Error: ' + data.error);
                 return;
             }
 
-            if (data.video_links.length > 0) {
-                linksDiv.innerHTML += '<h3>Video Links</h3>';
-                data.video_links.forEach(link => {
-                    linksDiv.innerHTML += `<a href="${link.url}" target="_blank">${link.resolution}</a>`;
-                });
-            }
+            document.title = data.title + ' - YouTube Video Stream Links';
 
-            if (data.audio_links.length > 0) {
-                linksDiv.innerHTML += '<h3>Audio Links</h3>';
-                data.audio_links.forEach(link => {
-                    linksDiv.innerHTML += `<a href="${link.url}" target="_blank">${link.abr}</a>`;
-                });
-            }
+            data.streams.forEach(stream => {
+                var li = document.createElement('li');
+                li.classList.add('stream-item');
+
+                var img = document.createElement('img');
+                img.src = stream.thumbnail_url;
+                li.appendChild(img);
+
+                var resolution = document.createElement('p');
+                resolution.textContent = 'Resolution: ' + stream.resolution;
+                li.appendChild(resolution);
+
+                var format = document.createElement('p');
+                format.textContent = 'Format: ' + (stream.progressive ? 'Progressive' : 'Adaptive');
+                li.appendChild(format);
+
+                var link = document.createElement('a');
+                link.href = stream.url;
+                link.textContent = 'Download';
+                li.appendChild(link);
+
+                streamList.appendChild(li);
+            });
         }
     </script>
 </body>
